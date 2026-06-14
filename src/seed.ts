@@ -14,11 +14,19 @@ async function fetchImage(url: string, filename: string) {
   }
 }
 
+function relationId(value: unknown): number | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value === 'object' && 'id' in (value as Record<string, unknown>)) {
+    return (value as { id: number }).id
+  }
+  return value as number
+}
+
 async function run() {
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
-  console.log('Médiák feltöltése...')
+  const resetImages = process.argv.includes('--reset-images')
 
   const uploadImage = async (url: string, filename: string, alt: string) => {
     const file = await fetchImage(url, filename)
@@ -30,57 +38,64 @@ async function run() {
     return doc.id
   }
 
-  const [
-    heroImage,
-    aboutImage1,
-    aboutImage2,
-    gallery1,
-    gallery2,
-    gallery3,
-    gallery4,
-    gallery5,
-  ] = await Promise.all([
-    uploadImage(
+  // Reset mode: figure out what's currently referenced so it can be deleted
+  // *after* the globals/collections are repointed to freshly uploaded images
+  // (deleting referenced media first would violate NOT NULL constraints).
+  const oldMediaIds = new Set<number>()
+  let galleryDocsToDelete: { id: number | string }[] = []
+
+  if (resetImages) {
+    const galleryDocs = await payload.find({ collection: 'gallery-images', limit: 100 })
+    const heroBefore = await payload.findGlobal({ slug: 'hero-section' })
+    const aboutBefore = await payload.findGlobal({ slug: 'about-section' })
+    const settingsBefore = await payload.findGlobal({ slug: 'site-settings' })
+
+    galleryDocsToDelete = galleryDocs.docs
+    for (const item of galleryDocs.docs) {
+      const id = relationId(item.image)
+      if (id !== undefined) oldMediaIds.add(id)
+    }
+    const heroImageId = relationId(heroBefore?.backgroundImage)
+    if (heroImageId !== undefined) oldMediaIds.add(heroImageId)
+    const aboutImage1Id = relationId(aboutBefore?.image1)
+    if (aboutImage1Id !== undefined) oldMediaIds.add(aboutImage1Id)
+    const aboutImage2Id = relationId(aboutBefore?.image2)
+    if (aboutImage2Id !== undefined) oldMediaIds.add(aboutImage2Id)
+    const ogImageId = relationId(settingsBefore?.seo?.ogImage)
+    if (ogImageId !== undefined) oldMediaIds.add(ogImageId)
+  }
+
+  console.log('Hero & Rólunk képek ellenőrzése...')
+
+  const hero = await payload.findGlobal({ slug: 'hero-section' })
+  const about = await payload.findGlobal({ slug: 'about-section' })
+
+  let heroImage = resetImages ? undefined : relationId(hero?.backgroundImage)
+  if (heroImage === undefined) {
+    heroImage = await uploadImage(
       'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=2400&auto=format&fit=crop',
       'hero-friss-kenyerek.jpg',
       'Frissen sült ropogós kenyerek',
-    ),
-    uploadImage(
+    )
+  }
+
+  let aboutImage1 = resetImages ? undefined : relationId(about?.image1)
+  if (aboutImage1 === undefined) {
+    aboutImage1 = await uploadImage(
       'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?q=80&w=1400&auto=format&fit=crop',
       'rolunk-tesztagyuras.jpg',
       'Pékmester tésztát gyúr',
-    ),
-    uploadImage(
+    )
+  }
+
+  let aboutImage2 = resetImages ? undefined : relationId(about?.image2)
+  if (aboutImage2 === undefined) {
+    aboutImage2 = await uploadImage(
       'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?q=80&w=1200&auto=format&fit=crop',
       'rolunk-kovasz-liszt.jpg',
       'Kovász és liszt',
-    ),
-    uploadImage(
-      'https://images.unsplash.com/photo-1598373182133-52452f7691ef?q=80&w=1400&auto=format&fit=crop',
-      'galeria-kiflik.jpg',
-      'Friss kiflik a tepsiben',
-    ),
-    uploadImage(
-      'https://images.unsplash.com/photo-1557308536-ee471ef2c390?q=80&w=1000&auto=format&fit=crop',
-      'galeria-csokis-sutemeny.jpg',
-      'Csokis péksütemény',
-    ),
-    uploadImage(
-      'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?q=80&w=1000&auto=format&fit=crop',
-      'galeria-bagettek.jpg',
-      'Bagettek a kosárban',
-    ),
-    uploadImage(
-      'https://images.unsplash.com/photo-1574085733277-851d9d856a3a?q=80&w=1000&auto=format&fit=crop',
-      'galeria-liszt-szoras.jpg',
-      'Liszt szórása a tésztára',
-    ),
-    uploadImage(
-      'https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=1000&auto=format&fit=crop',
-      'galeria-sutemeny.jpg',
-      'Házi sütemény',
-    ),
-  ])
+    )
+  }
 
   console.log('Hero szekció mentése...')
   await payload.updateGlobal({
@@ -172,94 +187,149 @@ async function run() {
     },
   })
 
-  console.log('Kínálat (Services) mentése...')
-  const services = [
-    {
-      title: 'Kenyerek',
-      description:
-        'Kézműves, lassú érlelésű kovászos kenyerek, vastag, ropogós héjjal és puha, lyukacsos bélzettel.',
-      icon: 'bread' as const,
-      order: 1,
-    },
-    {
-      title: 'Péksütemények',
-      description:
-        'Édes és sós reggeli finomságok. Vajas tészták, gazdag töltelékek, ahogy a nagymama is készítette.',
-      icon: 'croissant' as const,
-      order: 2,
-    },
-    {
-      title: 'Sütemények',
-      description:
-        'Házias ízvilágú torták, piték és aprósütemények. Különleges alkalmakra vagy csak úgy, a kávé mellé.',
-      icon: 'cake' as const,
-      order: 3,
-    },
-    {
-      title: 'Friss Pékáru',
-      description:
-        'Ropogós zsemlék, hagyományos vizes kiflik és teljes kiőrlésű alternatívák a mindennapi frissességért.',
-      icon: 'heart' as const,
-      order: 4,
-    },
-  ]
-  for (const service of services) {
-    await payload.create({ collection: 'services', data: service })
+  if (resetImages && (galleryDocsToDelete.length > 0 || oldMediaIds.size > 0)) {
+    console.log('Régi képek törlése...')
+    for (const item of galleryDocsToDelete) {
+      await payload.delete({ collection: 'gallery-images', id: item.id })
+    }
+    for (const id of oldMediaIds) {
+      await payload.delete({ collection: 'media', id })
+    }
   }
 
-  console.log('Üzletek mentése...')
-  const stores = [
-    {
-      name: 'Teleki utcai Főüzlet',
-      subtitle: 'Sütöde & Mintabolt',
-      address: '6800 Hódmezővásárhely, Teleki u. 18.',
-      openingHours: [
-        { days: 'Hétfő - Péntek', hours: '05:30 - 18:00' },
-        { days: 'Szombat', hours: '06:00 - 13:00' },
-        { days: 'Vasárnap', hours: 'Zárva' },
-      ],
-      showOpenBadge: true,
-      order: 1,
-    },
-    {
-      name: 'Makói úti Péküzlet',
-      subtitle: 'Frissen helyben sütve',
-      address: '6800 Hódmezővásárhely, Makói út 23.',
-      openingHours: [
-        { days: 'Hétfő - Péntek', hours: '06:00 - 17:00' },
-        { days: 'Szombat', hours: '06:00 - 12:00' },
-        { days: 'Vasárnap', hours: 'Zárva' },
-      ],
-      showOpenBadge: false,
-      order: 2,
-    },
-    {
-      name: 'Szabadság téri Bolt',
-      subtitle: 'Pékáru és Kávézó',
-      address: '6800 Hódmezővásárhely, Szabadság tér 58.',
-      openingHours: [
-        { days: 'Hétfő - Péntek', hours: '06:30 - 18:00' },
-        { days: 'Szombat', hours: '07:00 - 13:00' },
-        { days: 'Vasárnap', hours: 'Zárva' },
-      ],
-      showOpenBadge: false,
-      order: 3,
-    },
-  ]
-  for (const store of stores) {
-    await payload.create({ collection: 'stores', data: store })
+  console.log('Kínálat (Services) ellenőrzése...')
+  const existingServices = await payload.find({ collection: 'services', limit: 1 })
+  if (existingServices.totalDocs === 0) {
+    const services = [
+      {
+        title: 'Kenyerek',
+        description:
+          'Kézműves, lassú érlelésű kovászos kenyerek, vastag, ropogós héjjal és puha, lyukacsos bélzettel.',
+        icon: 'bread' as const,
+        order: 1,
+      },
+      {
+        title: 'Péksütemények',
+        description:
+          'Édes és sós reggeli finomságok. Vajas tészták, gazdag töltelékek, ahogy a nagymama is készítette.',
+        icon: 'croissant' as const,
+        order: 2,
+      },
+      {
+        title: 'Sütemények',
+        description:
+          'Házias ízvilágú torták, piték és aprósütemények. Különleges alkalmakra vagy csak úgy, a kávé mellé.',
+        icon: 'cake' as const,
+        order: 3,
+      },
+      {
+        title: 'Friss Pékáru',
+        description:
+          'Ropogós zsemlék, hagyományos vizes kiflik és teljes kiőrlésű alternatívák a mindennapi frissességért.',
+        icon: 'heart' as const,
+        order: 4,
+      },
+    ]
+    for (const service of services) {
+      await payload.create({ collection: 'services', data: service })
+    }
+  } else {
+    console.log('Kínálat már létezik, kihagyva.')
   }
 
-  console.log('Galéria mentése...')
-  const galleryImages = [
-    { image: gallery1, alt: 'Friss kiflik a tepsiben', order: 1 },
-    { image: gallery2, alt: 'Csokis péksütemény', order: 2 },
-    { image: gallery3, alt: 'Bagettek a kosárban', order: 3 },
-    { image: gallery4, alt: 'Liszt szórása a tésztára', order: 4 },
-    { image: gallery5, alt: 'Házi sütemény', order: 5 },
-  ]
-  for (const item of galleryImages) {
-    await payload.create({ collection: 'gallery-images', data: item })
+  console.log('Üzletek ellenőrzése...')
+  const existingStores = await payload.find({ collection: 'stores', limit: 1 })
+  if (existingStores.totalDocs === 0) {
+    const stores = [
+      {
+        name: 'Teleki utcai Főüzlet',
+        subtitle: 'Sütöde & Mintabolt',
+        address: '6800 Hódmezővásárhely, Teleki u. 18.',
+        openingHours: [
+          { days: 'Hétfő - Péntek', hours: '05:30 - 18:00' },
+          { days: 'Szombat', hours: '06:00 - 13:00' },
+          { days: 'Vasárnap', hours: 'Zárva' },
+        ],
+        showOpenBadge: true,
+        order: 1,
+      },
+      {
+        name: 'Makói úti Péküzlet',
+        subtitle: 'Frissen helyben sütve',
+        address: '6800 Hódmezővásárhely, Makói út 23.',
+        openingHours: [
+          { days: 'Hétfő - Péntek', hours: '06:00 - 17:00' },
+          { days: 'Szombat', hours: '06:00 - 12:00' },
+          { days: 'Vasárnap', hours: 'Zárva' },
+        ],
+        showOpenBadge: false,
+        order: 2,
+      },
+      {
+        name: 'Szabadság téri Bolt',
+        subtitle: 'Pékáru és Kávézó',
+        address: '6800 Hódmezővásárhely, Szabadság tér 58.',
+        openingHours: [
+          { days: 'Hétfő - Péntek', hours: '06:30 - 18:00' },
+          { days: 'Szombat', hours: '07:00 - 13:00' },
+          { days: 'Vasárnap', hours: 'Zárva' },
+        ],
+        showOpenBadge: false,
+        order: 3,
+      },
+    ]
+    for (const store of stores) {
+      await payload.create({ collection: 'stores', data: store })
+    }
+  } else {
+    console.log('Üzletek már léteznek, kihagyva.')
+  }
+
+  console.log('Galéria ellenőrzése...')
+  const existingGallery = await payload.find({ collection: 'gallery-images', limit: 1 })
+  if (existingGallery.totalDocs === 0) {
+    console.log('Galéria képek feltöltése...')
+    const galleryImages = [
+      {
+        url: 'https://images.unsplash.com/photo-1598373182133-52452f7691ef?q=80&w=1400&auto=format&fit=crop',
+        filename: 'galeria-kiflik.jpg',
+        alt: 'Friss kiflik a tepsiben',
+        order: 1,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1557308536-ee471ef2c390?q=80&w=1000&auto=format&fit=crop',
+        filename: 'galeria-csokis-sutemeny.jpg',
+        alt: 'Csokis péksütemény',
+        order: 2,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?q=80&w=1000&auto=format&fit=crop',
+        filename: 'galeria-bagettek.jpg',
+        alt: 'Bagettek a kosárban',
+        order: 3,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1574085733277-851d9d856a3a?q=80&w=1000&auto=format&fit=crop',
+        filename: 'galeria-liszt-szoras.jpg',
+        alt: 'Liszt szórása a tésztára',
+        order: 4,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=1000&auto=format&fit=crop',
+        filename: 'galeria-sutemeny.jpg',
+        alt: 'Házi sütemény',
+        order: 5,
+      },
+    ]
+    for (const item of galleryImages) {
+      const imageId = await uploadImage(item.url, item.filename, item.alt)
+      await payload.create({
+        collection: 'gallery-images',
+        data: { image: imageId, alt: item.alt, order: item.order },
+      })
+    }
+  } else {
+    console.log('Galéria már létezik, kihagyva.')
   }
 
   console.log('Seed kész!')
@@ -270,5 +340,6 @@ try {
   process.exit(0)
 } catch (err) {
   console.error(err)
-  process.exit(1)
+  process.exitCode = 1
+  process.exit()
 }
