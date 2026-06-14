@@ -7,6 +7,14 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { Services } from './collections/Services'
+import { Stores } from './collections/Stores'
+import { GalleryImages } from './collections/GalleryImages'
+import { FormSubmissions } from './collections/FormSubmissions'
+import { HeroSection } from './globals/HeroSection'
+import { AboutSection } from './globals/AboutSection'
+import { ContactInfo } from './globals/ContactInfo'
+import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -18,7 +26,8 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, Services, Stores, GalleryImages, FormSubmissions],
+  globals: [HeroSection, AboutSection, ContactInfo, SiteSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -28,6 +37,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    push: process.env.NODE_ENV !== 'production',
   }),
   sharp,
   plugins: [],

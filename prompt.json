@@ -1,0 +1,40 @@
+{
+  "project": {
+    "name": "Pékmester Sütödéje",
+    "slug": "pekmester-sutodeje",
+    "language": "hu"
+  },
+  "business": {
+    "name": "Pékmester Sütödéje",
+    "industry": "Pékség",
+    "city": "Hódmezővásárhely",
+    "tier": "Tier 1",
+    "contact": {
+      "phone": "+36 70 361 1028",
+      "email": "vasarhelyicipo@gmail.com",
+      "address": "Teleki u. 18, 6800 Hódmezővásárhely",
+      "facebook": "https://www.facebook.com/pekmester.sutodeje",
+      "instagram": "https://www.instagram.com/gmail.com"
+    }
+  },
+  "design": {
+    "colors": {
+      "primary": "#7A4E2D",
+      "background": "#F8F1E4"
+    },
+    "fonts": {
+      "heading": "Merriweather",
+      "body": "Bitter"
+    }
+  },
+  "sections": [
+    "hero",
+    "services",
+    "about",
+    "gallery",
+    "booking-form",
+    "contact",
+    "footer"
+  ],
+  "full_prompt": "Készíts egy magyar nyelvű, egyoldalas landing page-et egy pékségnek:\n\nAZ ÜZLET ADATAI:\n- Név: Pékmester Sütödéje\n- Cím: Teleki u. 18, 6800 Hódmezővásárhely (további üzletek: Makói út 23, Szabadság tér 58)\n- Telefon: +36 70 361 1028\n- Email: vasarhelyicipo@gmail.com\n- Facebook: facebook.com/pekmester.sutodeje\n- Megjegyzés: A jelenlegi pekmester.hu csak egy üres template (nem működő) — teljes újratervezés\n- Szolgáltatások: Friss pékáru, kenyér, péksütemény, sütemények\n\nDESIGN:\n- Stílus: Meleg, étvágygerjesztő, kézműves, otthonos\n- Színek: Meleg barna (#7A4E2D) fejlécekhez, búzasárga (#E0A93C) kiemelésekhez, krém (#F8F1E4) háttérhez, sötétbarna (#3A2A1C) szöveghez\n- Betűtípus: Barátságos serif címekhez (pl. Bitter vagy Merriweather), sans-serif szöveghez\n\nFELÉPÍTÉS (egyetlen görgethető oldal):\n1. Hero szekció: \"Pékmester Sütödéje — Hódmezővásárhely\", szlogen (\"Friss, ropogós, kézzel sütve minden nap\"), CTA: \"Nézd meg kínálatunkat\"\n2. Kínálatunk: Kenyerek, péksütemények, sütemények, friss pékáru — kategóriánként rövid leírás\n3. Rólunk: A pékség bemutatkozása, kézműves szemlélet, frissesség\n4. Üzleteink: A 3 üzlet címe (Teleki u. 18, Makói út 23, Szabadság tér 58) nyitvatartással\n5. Galéria: 6 kép placeholder (pékáruk, sütemények, üzlet)\n6. Kapcsolat űrlap: Név, telefon, üzenet (érdeklődés / rendelés)\n7. Elérhetőség: Telefon, email, üzletek, Google Maps\n8. Lábléc: Facebook, telefon, cím, © 2026\n\nHANGNEM: Meleg, közvetlen, étvágygerjesztő, helyi.\n\nTECHNIKAI: Mobilbarát, reszponzív, képoptimalizálás. Telefonszám kattintható."
+}

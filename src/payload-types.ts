@@ -69,6 +69,10 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    services: Service;
+    stores: Store;
+    'gallery-images': GalleryImage;
+    'form-submissions': FormSubmission;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,17 +82,31 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
+    stores: StoresSelect<false> | StoresSelect<true>;
+    'gallery-images': GalleryImagesSelect<false> | GalleryImagesSelect<true>;
+    'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'hero-section': HeroSection;
+    'about-section': AboutSection;
+    'contact-info': ContactInfo;
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    'hero-section': HeroSectionSelect<false> | HeroSectionSelect<true>;
+    'about-section': AboutSectionSelect<false> | AboutSectionSelect<true>;
+    'contact-info': ContactInfoSelect<false> | ContactInfoSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -122,7 +140,7 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -147,7 +165,7 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -162,11 +180,102 @@ export interface Media {
   focalY?: number | null;
 }
 /**
+ * A "Kínálatunk" szekció kártyái a főoldalon.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  title: string;
+  description: string;
+  /**
+   * A kártyán megjelenő ikon.
+   */
+  icon: 'bread' | 'croissant' | 'cake' | 'heart' | 'wheat' | 'coffee';
+  /**
+   * Kisebb szám előrébb jelenik meg.
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Az "Üzleteink" szekció kártyái a főoldalon.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stores".
+ */
+export interface Store {
+  id: number;
+  name: string;
+  /**
+   * Pl. "Sütöde & Mintabolt"
+   */
+  subtitle?: string | null;
+  address: string;
+  openingHours?:
+    | {
+        /**
+         * Pl. "Hétfő - Péntek"
+         */
+        days: string;
+        /**
+         * Pl. "05:30 - 18:00" vagy "Zárva"
+         */
+        hours: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Zöld pulzáló jelzés a kártyán (pl. a főüzletnek).
+   */
+  showOpenBadge?: boolean | null;
+  /**
+   * Kisebb szám előrébb jelenik meg.
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * A "Galéria" szekció képei a főoldalon.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gallery-images".
+ */
+export interface GalleryImage {
+  id: number;
+  image: number | Media;
+  alt: string;
+  /**
+   * Kisebb szám előrébb jelenik meg.
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * A kapcsolatfelvételi űrlapon beérkezett üzenetek.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "form-submissions".
+ */
+export interface FormSubmission {
+  id: number;
+  name: string;
+  phone: string;
+  message: string;
+  status?: ('new' | 'contacted' | 'done') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -183,20 +292,36 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'services';
+        value: number | Service;
+      } | null)
+    | ({
+        relationTo: 'stores';
+        value: number | Store;
+      } | null)
+    | ({
+        relationTo: 'gallery-images';
+        value: number | GalleryImage;
+      } | null)
+    | ({
+        relationTo: 'form-submissions';
+        value: number | FormSubmission;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -206,10 +331,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -229,7 +354,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -277,6 +402,61 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services_select".
+ */
+export interface ServicesSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  icon?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stores_select".
+ */
+export interface StoresSelect<T extends boolean = true> {
+  name?: T;
+  subtitle?: T;
+  address?: T;
+  openingHours?:
+    | T
+    | {
+        days?: T;
+        hours?: T;
+        id?: T;
+      };
+  showOpenBadge?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gallery-images_select".
+ */
+export interface GalleryImagesSelect<T extends boolean = true> {
+  image?: T;
+  alt?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "form-submissions_select".
+ */
+export interface FormSubmissionsSelect<T extends boolean = true> {
+  name?: T;
+  phone?: T;
+  message?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -314,6 +494,211 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * A főoldal legfelső, teljes képernyős szekciója.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hero-section".
+ */
+export interface HeroSection {
+  id: number;
+  badgeText?: string | null;
+  titleLine1: string;
+  /**
+   * Ez a sor dőlt, búzasárga színnel jelenik meg.
+   */
+  titleHighlight: string;
+  titleLine2: string;
+  subtitle?: string | null;
+  ctaText?: string | null;
+  ctaLink?: string | null;
+  backgroundImage: number | Media;
+  /**
+   * A hero alatti futó szövegsor elemei.
+   */
+  marqueeItems?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * A "Rólunk" szekció a főoldalon.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-section".
+ */
+export interface AboutSection {
+  id: number;
+  title: string;
+  paragraphs?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  quote?: string | null;
+  quoteAuthor?: string | null;
+  image1: number | Media;
+  image2: number | Media;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * A "Kapcsolat" szekció űrlapja és elérhetőségi adatok a főoldalon és a lábjegyzetben.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-info".
+ */
+export interface ContactInfo {
+  id: number;
+  formTitle?: string | null;
+  formDescription?: string | null;
+  formSuccessMessage?: string | null;
+  /**
+   * Megjelenítendő formátum, pl. "+36 70 361 1028". A tel: link automatikusan generálódik.
+   */
+  phone: string;
+  email: string;
+  facebookUrl?: string | null;
+  /**
+   * A Google Maps "Térkép beágyazása" iframe src attribútumának értéke.
+   */
+  mapEmbedUrl?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Navigáció, szekciócímek, lábjegyzet és SEO beállítások.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  siteName: string;
+  navLinks?:
+    | {
+        label: string;
+        /**
+         * Pl. "#kinalat"
+         */
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  servicesTitle?: string | null;
+  servicesDescription?: string | null;
+  servicesLinkText?: string | null;
+  servicesLinkHref?: string | null;
+  storesEyebrow?: string | null;
+  storesTitle?: string | null;
+  galleryTitle?: string | null;
+  galleryDescription?: string | null;
+  footerText?: string | null;
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    ogImage?: (number | null) | Media;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hero-section_select".
+ */
+export interface HeroSectionSelect<T extends boolean = true> {
+  badgeText?: T;
+  titleLine1?: T;
+  titleHighlight?: T;
+  titleLine2?: T;
+  subtitle?: T;
+  ctaText?: T;
+  ctaLink?: T;
+  backgroundImage?: T;
+  marqueeItems?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-section_select".
+ */
+export interface AboutSectionSelect<T extends boolean = true> {
+  title?: T;
+  paragraphs?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  quote?: T;
+  quoteAuthor?: T;
+  image1?: T;
+  image2?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-info_select".
+ */
+export interface ContactInfoSelect<T extends boolean = true> {
+  formTitle?: T;
+  formDescription?: T;
+  formSuccessMessage?: T;
+  phone?: T;
+  email?: T;
+  facebookUrl?: T;
+  mapEmbedUrl?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  siteName?: T;
+  navLinks?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  servicesTitle?: T;
+  servicesDescription?: T;
+  servicesLinkText?: T;
+  servicesLinkHref?: T;
+  storesEyebrow?: T;
+  storesTitle?: T;
+  galleryTitle?: T;
+  galleryDescription?: T;
+  footerText?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
